@@ -3,11 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pas Foto Generator – Sederhana & Gratis</title>
+  <title>Pas Foto Generator – AI Background (Client‑side)</title>
   <style>
-    :root{
-      --bg:#0f172a;--card:#111827;--muted:#94a3b8;--text:#e5e7eb;--accent:#38bdf8;--btn:#1f2937;--ring:#22d3ee
-    }
+    :root{--bg:#0f172a;--card:#111827;--muted:#94a3b8;--text:#e5e7eb;--accent:#38bdf8;--ring:#22d3ee}
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(180deg,#0b1220,#0f172a 30%,#0b1220 100%);color:var(--text);font:500 14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
     .container{max-width:1100px;margin:24px auto;padding:0 16px}
@@ -27,24 +25,25 @@
     .pill{padding:6px 10px;border-radius:999px;border:1px dashed rgba(148,163,184,.3);font-size:12px;color:var(--muted)}
     .canvas-wrap{position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(148,163,184,.2);background:#0b1220;min-height:400px}
     canvas{display:block;width:100%;height:auto;background:#0b1220}
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
     .badge{font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid rgba(148,163,184,.25);color:#a5b4fc;background:rgba(67,56,202,.15)}
-    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid rgba(148,163,184,.35);background:#050a12;color:#cbd5e1}
+    .hint{color:var(--muted);font-size:12px}
+    .divider{height:1px;background:rgba(148,163,184,.2);margin:12px 0}
     .chips{display:flex;gap:8px;flex-wrap:wrap}
     .chip{padding:6px 10px;border-radius:999px;border:1px solid rgba(148,163,184,.35);cursor:pointer}
     .chip[data-active="true"]{border-color:rgba(56,189,248,.8);box-shadow:0 0 0 2px rgba(34,211,238,.15)}
-    .hint{color:var(--muted);font-size:12px}
-    .divider{height:1px;background:rgba(148,163,184,.2);margin:12px 0}
+    #progress{height:4px;border-radius:999px;background:rgba(34,211,238,.2);overflow:hidden}
+    #bar{height:100%;width:0;background:linear-gradient(90deg,#22d3ee,#38bdf8)}
+    .row label.inline{display:flex;align-items:center;gap:8px}
   </style>
 </head>
 <body>
   <div class="container">
     <header class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
       <div>
-        <h1 style="margin:0;font-size:22px">Pas Foto Generator</h1>
-        <div class="hint">Upload foto ➜ pilih ukuran ➜ atur posisi ➜ ganti background ➜ download PNG/PDF siap cetak.</div>
+        <h1 style="margin:0;font-size:22px">Pas Foto Generator (AI)</h1>
+        <div class="hint">Upload foto ➜ pilih ukuran ➜ <b>AI hapus background</b> (client‑side, gratis) ➜ ganti warna ➜ download PNG/PDF.</div>
       </div>
-      <div class="pill">Gratis • Client‑side • Cocok untuk GitHub + Vercel</div>
+      <div class="pill">Gratis • Client‑side • GitHub + Vercel</div>
     </header>
 
     <div class="grid">
@@ -60,10 +59,7 @@
             <label>Zoom</label><br>
             <input id="zoom" type="range" min="0.5" max="3" value="1" step="0.01">
           </div>
-          <div>
-            <label>Geser (Drag)</label><br>
-            <span class="kbd">Klik & Seret di kanvas</span>
-          </div>
+          <div class="hint">Drag foto di kanvas untuk geser posisi.</div>
         </div>
 
         <div class="divider"></div>
@@ -88,7 +84,7 @@
         <div class="divider"></div>
 
         <h2>3) Background</h2>
-        <div class="row toolbar">
+        <div class="row">
           <div class="chips" id="bgPreset">
             <div class="chip" data-color="#ffffff">Putih</div>
             <div class="chip" data-color="#e11d48">Merah</div>
@@ -103,7 +99,7 @@
             <label>Mode Edit</label><br>
             <select id="editMode">
               <option value="move">Pindah/Posisi</option>
-              <option value="erase">Hapus Background (kuas)</option>
+              <option value="erase">Hapus Manual (kuas)</option>
               <option value="restore">Kembalikan (kuas)</option>
             </select>
           </div>
@@ -112,7 +108,21 @@
             <input id="brush" type="range" min="8" max="80" value="28">
           </div>
         </div>
-        <div class="hint">Tips: gunakan kuas untuk menghapus latar belakang foto, lalu pilih warna latar di atas.</div>
+        <div class="row" style="align-items:center">
+          <button id="aiErase" class="btn-accent">AI Hapus Background (1 klik)</button>
+          <label class="inline">Detail AI
+            <select id="aiQuality">
+              <option value="fast">Cepat</option>
+              <option value="medium" selected>Sedang</option>
+              <option value="high">Maksimal</option>
+            </select>
+          </label>
+          <label class="inline">Halus tepi
+            <input id="feather" type="range" min="0" max="8" step="1" value="2">
+          </label>
+        </div>
+        <div id="progress" hidden><div id="bar"></div></div>
+        <div class="hint">AI berjalan di perangkat kamu (TensorFlow.js BodyPix, gratis). Setelah AI, masih bisa dirapikan manual.</div>
 
         <div class="divider"></div>
 
@@ -146,305 +156,133 @@
         <div class="canvas-wrap">
           <canvas id="preview" width="900" height="1200"></canvas>
         </div>
-        <div style="margin-top:10px" class="hint">Gunakan mouse/trackpad untuk memindahkan foto. Zoom dengan slider. Edit kuas untuk hapus/lawan-hapus latar.</div>
+        <div style="margin-top:10px" class="hint">Drag untuk memindahkan foto. Zoom dengan slider. Kuas untuk hapus/kembalikan area.</div>
         <div style="margin-top:10px" id="sheetWrap" class="canvas-wrap" hidden>
           <canvas id="sheet" width="1800" height="1200"></canvas>
         </div>
       </div>
     </div>
 
-    <footer style="margin:18px 0 8px" class="hint">v1.0 • Semua proses di browser (gratis). Cocok untuk KTP, paspor, buku nikah, dll. Sesuaikan aturan instansi masing‑masing.</footer>
+    <footer style="margin:18px 0 8px" class="hint">v2.0 • AI segmentation lokal (BodyPix). Semua proses di browser. Untuk instansi berbeda, cek kembali aturan ukuran & komposisi.</footer>
   </div>
 
   <!-- jsPDF (untuk PDF client-side) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <!-- TensorFlow.js + BodyPix (client-side, gratis) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js"></script>
 
   <script>
   ;(() => {
-    const fileEl = document.getElementById('file')
-    const zoomEl = document.getElementById('zoom')
-    const presetEl = document.getElementById('preset')
-    const dpiEl = document.getElementById('dpi')
-    const bgColorEl = document.getElementById('bgColor')
-    const bgPreset = document.getElementById('bgPreset')
-    const editModeEl = document.getElementById('editMode')
-    const brushEl = document.getElementById('brush')
-    const paperEl = document.getElementById('paper')
-    const cutGuidesEl = document.getElementById('cutGuides')
-    const makeSheetBtn = document.getElementById('makeSheet')
-    const downloadPNGBtn = document.getElementById('downloadPNG')
-    const downloadPDFBtn = document.getElementById('downloadPDF')
+    const $ = (id) => document.getElementById(id)
+    const fileEl = $('file'), zoomEl = $('zoom'), presetEl = $('preset'), dpiEl = $('dpi')
+    const bgColorEl = $('bgColor'), editModeEl = $('editMode'), brushEl = $('brush')
+    const paperEl = $('paper'), cutGuidesEl = $('cutGuides'), makeSheetBtn = $('makeSheet')
+    const downloadPNGBtn = $('downloadPNG'), downloadPDFBtn = $('downloadPDF'), aiBtn = $('aiErase')
+    const aiQualityEl = $('aiQuality'), featherEl = $('feather'), progress = $('progress'), bar = $('bar')
 
-    const preview = document.getElementById('preview')
-    const ctx = preview.getContext('2d')
-    const sheet = document.getElementById('sheet')
-    const sheetCtx = sheet.getContext('2d')
-    const sheetWrap = document.getElementById('sheetWrap')
-    const badgeSize = document.getElementById('badgeSize')
+    const preview = $('preview'), ctx = preview.getContext('2d')
+    const sheet = $('sheet'), sheetCtx = sheet.getContext('2d'), sheetWrap = $('sheetWrap')
+    const badgeSize = $('badgeSize')
 
     const state = {
-      img: null,
-      imgBitmap: null,
-      scale: 1,
-      offset: {x:0, y:0},
-      dragging: false,
-      dragStart: {x:0, y:0},
-      lastOffset: {x:0, y:0},
-      maskCanvas: document.createElement('canvas'), // untuk hapus background manual
-      paperDPI: 300,
-      photoPx: {w:1050, h:1350}, // default 35x45mm @300dpi
-      bgColor: '#ffffff'
+      img: null, imgBitmap: null, scale: 1, offset: {x:0,y:0}, dragging:false,
+      dragStart:{x:0,y:0}, lastOffset:{x:0,y:0}, maskCanvas: document.createElement('canvas'),
+      paperDPI: 300, photoPx:{w:1050,h:1350}, bgColor:'#ffffff', net: null
     }
 
-    function mmToPixels(mm, dpi) { return Math.round(mm * (dpi / 25.4)) }
-    function inchToPixels(inch, dpi) { return Math.round(inch * dpi) }
+    function mmToPixels(mm, dpi){ return Math.round(mm * (dpi / 25.4)) }
+    function inchToPixels(inch, dpi){ return Math.round(inch * dpi) }
 
-    function updatePhotoSize() {
-      const dpi = parseInt(dpiEl.value || '300', 10)
-      state.paperDPI = dpi
-      let wpx=0, hpx=0, label=''
+    function updatePhotoSize(){
+      const dpi = parseInt(dpiEl.value||'300',10); state.paperDPI = dpi
+      let wpx=0,hpx=0,label=''
       switch(presetEl.value){
-        case '35x45mm': wpx = mmToPixels(35, dpi); hpx = mmToPixels(45, dpi); label='35×45 mm'; break
-        case '30x40mm': wpx = mmToPixels(30, dpi); hpx = mmToPixels(40, dpi); label='30×40 mm'; break
-        case '40x60mm': wpx = mmToPixels(40, dpi); hpx = mmToPixels(60, dpi); label='40×60 mm'; break
-        case '20x30mm': wpx = mmToPixels(20, dpi); hpx = mmToPixels(30, dpi); label='20×30 mm'; break
-        case '25x35mm': wpx = mmToPixels(25, dpi); hpx = mmToPixels(35, dpi); label='25×35 mm'; break
-        case '2x2in':   wpx = inchToPixels(2, dpi); hpx = inchToPixels(2, dpi); label='2×2 inch'; break
+        case '35x45mm': wpx=mmToPixels(35,dpi); hpx=mmToPixels(45,dpi); label='35×45 mm'; break
+        case '30x40mm': wpx=mmToPixels(30,dpi); hpx=mmToPixels(40,dpi); label='30×40 mm'; break
+        case '40x60mm': wpx=mmToPixels(40,dpi); hpx=mmToPixels(60,dpi); label='40×60 mm'; break
+        case '20x30mm': wpx=mmToPixels(20,dpi); hpx=mmToPixels(30,dpi); label='20×30 mm'; break
+        case '25x35mm': wpx=mmToPixels(25,dpi); hpx=mmToPixels(35,dpi); label='25×35 mm'; break
+        case '2x2in': wpx=inchToPixels(2,dpi); hpx=inchToPixels(2,dpi); label='2×2 inch'; break
       }
-      state.photoPx = {w:wpx, h:hpx}
-      // resize preview canvas proportionally (fit within ~900x1200 area)
-      const maxW = 900, maxH = 1200
-      const aspect = hpx>0? wpx/hpx : 1
-      let pw = maxW, ph = Math.round(maxW/aspect)
-      if(ph>maxH){ ph = maxH; pw = Math.round(ph*aspect) }
-      preview.width = pw; preview.height = ph
-      // Resize mask to preview-size ratio (mask uses photo pixel grid)
-      state.maskCanvas.width = wpx; state.maskCanvas.height = hpx
+      state.photoPx = {w:wpx,h:hpx}
+      const maxW=900,maxH=1200, aspect = hpx? wpx/hpx:1
+      let pw=maxW, ph=Math.round(maxW/aspect); if(ph>maxH){ ph=maxH; pw=Math.round(ph*aspect) }
+      preview.width=pw; preview.height=ph
+      state.maskCanvas.width=wpx; state.maskCanvas.height=hpx
       badgeSize.textContent = `${label} @ ${dpi} dpi → ${wpx}×${hpx} px`
       draw()
     }
 
-    function setBG(color){ state.bgColor = color; bgColorEl.value = color; draw() }
-
-    function clearCanvas(c) { const g = c.getContext('2d'); g.clearRect(0,0,c.width,c.height) }
+    function setBG(color){ state.bgColor=color; bgColorEl.value=color; draw() }
+    function resetMask(){ const mg=state.maskCanvas.getContext('2d'); mg.clearRect(0,0,state.maskCanvas.width,state.maskCanvas.height); mg.fillStyle='#fff'; mg.fillRect(0,0,state.maskCanvas.width,state.maskCanvas.height) }
 
     function draw(){
-      if(!state.imgBitmap){
-        ctx.fillStyle = '#0b1220'; ctx.fillRect(0,0,preview.width,preview.height)
-        return
-      }
-      // Scale mapping: preview canvas maps to photo pixel output
-      // We'll draw background color, then masked person image into preview space
-      const scaleX = preview.width / state.photoPx.w
-      const scaleY = preview.height / state.photoPx.h
-
-      ctx.save()
-      // background solid
-      ctx.fillStyle = state.bgColor
-      ctx.fillRect(0,0,preview.width,preview.height)
-
-      // draw masked person: use maskCanvas alpha
-      // compose offscreen: source image at output pixel grid, apply mask as globalCompositeOperation
-      const off = document.createElement('canvas')
-      off.width = state.photoPx.w; off.height = state.photoPx.h
-      const og = off.getContext('2d')
-      // place image according to scale & offset (in output px space)
-      const iw = state.imgBitmap.width * state.scale
-      const ih = state.imgBitmap.height * state.scale
-      const ix = Math.round(state.offset.x + (state.photoPx.w - iw)/2)
-      const iy = Math.round(state.offset.y + (state.photoPx.h - ih)/2)
+      if(!state.imgBitmap){ ctx.fillStyle='#0b1220'; ctx.fillRect(0,0,preview.width,preview.height); return }
+      const off=document.createElement('canvas'); off.width=state.photoPx.w; off.height=state.photoPx.h
+      const og=off.getContext('2d')
+      // BG solid
+      og.fillStyle=state.bgColor; og.fillRect(0,0,off.width,off.height)
+      // Gambar orang sesuai posisi
+      const iw=state.imgBitmap.width*state.scale, ih=state.imgBitmap.height*state.scale
+      const ix=Math.round(state.offset.x + (state.photoPx.w - iw)/2), iy=Math.round(state.offset.y + (state.photoPx.h - ih)/2)
       og.drawImage(state.imgBitmap, ix, iy, iw, ih)
-
-      // apply mask
-      og.globalCompositeOperation = 'destination-in'
-      og.drawImage(state.maskCanvas, 0,0)
-      og.globalCompositeOperation = 'source-over'
-
+      // Apply mask
+      og.globalCompositeOperation='destination-in'; og.drawImage(state.maskCanvas,0,0)
+      og.globalCompositeOperation='source-over'
+      // Render ke preview
       ctx.imageSmoothingQuality='high'
-      ctx.drawImage(off, 0,0, off.width, off.height, 0,0, preview.width, preview.height)
-      ctx.restore()
+      ctx.drawImage(off,0,0,off.width,off.height,0,0,preview.width,preview.height)
     }
 
-    // init empty mask as fully opaque
-    function resetMask(){
-      const mg = state.maskCanvas.getContext('2d')
-      mg.save()
-      mg.globalCompositeOperation = 'source-over'
-      mg.fillStyle = 'rgba(255,255,255,1)'
-      mg.fillRect(0,0,state.maskCanvas.width,state.maskCanvas.height)
-      mg.restore()
-    }
+    function clientToPhotoPixels(clientX, clientY){ const r=preview.getBoundingClientRect(); const x=clientX-r.left, y=clientY-r.top; return {px:Math.round(x*(state.photoPx.w/preview.width)), py:Math.round(y*(state.photoPx.h/preview.height))} }
+    function paintMask(px,py){ const mode=editModeEl.value, r=parseInt(brushEl.value,10), mg=state.maskCanvas.getContext('2d'); mg.save(); mg.globalCompositeOperation=(mode==='restore')?'source-over':'destination-out'; mg.beginPath(); mg.arc(px,py,r,0,Math.PI*2); mg.fillStyle=(mode==='restore')?'#fff':'#000'; mg.fill(); mg.restore() }
 
-    // Painting on mask: erase = paint transparent (cut out), restore = paint white (keep)
-    function paintMask(px, py){
-      const mode = editModeEl.value
-      const r = parseInt(brushEl.value,10)
-      const mg = state.maskCanvas.getContext('2d')
-      mg.save()
-      mg.globalCompositeOperation = 'destination-out'
-      if(mode==='restore') mg.globalCompositeOperation = 'source-over'
-      mg.beginPath(); mg.arc(px, py, r, 0, Math.PI*2)
-      mg.fillStyle = (mode==='erase')? 'rgba(0,0,0,1)':'rgba(255,255,255,1)'
-      mg.fill(); mg.restore()
-    }
-
-    function clientToPhotoPixels(clientX, clientY){
-      const rect = preview.getBoundingClientRect()
-      const x = clientX - rect.left
-      const y = clientY - rect.top
-      // map to output pixel grid
-      const px = Math.round(x * (state.photoPx.w / preview.width))
-      const py = Math.round(y * (state.photoPx.h / preview.height))
-      return {px, py}
-    }
-
-    // Events
-    fileEl.addEventListener('change', async (e)=>{
-      const f = e.target.files?.[0]; if(!f) return
-      const img = new Image(); img.src = URL.createObjectURL(f)
-      await img.decode()
-      state.img = img
-      state.imgBitmap = await createImageBitmap(img)
-      state.scale = 1; state.offset = {x:0,y:0}
-      resetMask()
-      draw()
-    })
-
-    zoomEl.addEventListener('input', ()=>{ state.scale = parseFloat(zoomEl.value); draw() })
+    fileEl.addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const img=new Image(); img.src=URL.createObjectURL(f); await img.decode(); state.img=img; state.imgBitmap=await createImageBitmap(img); state.scale=1; state.offset={x:0,y:0}; resetMask(); draw() })
+    zoomEl.addEventListener('input', ()=>{ state.scale=parseFloat(zoomEl.value); draw() })
     presetEl.addEventListener('change', updatePhotoSize)
     dpiEl.addEventListener('change', updatePhotoSize)
     bgColorEl.addEventListener('input', ()=> setBG(bgColorEl.value))
+    document.querySelectorAll('#bgPreset .chip').forEach(ch=> ch.addEventListener('click',()=>{ document.querySelectorAll('#bgPreset .chip').forEach(x=>x.dataset.active='false'); ch.dataset.active='true'; setBG(ch.dataset.color) }))
 
-    // bg preset chips
-    ;[...bgPreset.querySelectorAll('.chip')].forEach(ch=>{
-      ch.addEventListener('click',()=>{
-        [...bgPreset.children].forEach(x=>x.dataset.active='false')
-        ch.dataset.active='true'
-        setBG(ch.dataset.color)
-      })
-    })
+    preview.addEventListener('pointerdown', (e)=>{ preview.setPointerCapture(e.pointerId); state.dragging=true; state.dragStart={x:e.clientX,y:e.clientY}; state.lastOffset={...state.offset}; if(editModeEl.value!=='move'){ const {px,py}=clientToPhotoPixels(e.clientX,e.clientY); paintMask(px,py); draw() } })
+    preview.addEventListener('pointermove', (e)=>{ if(!state.dragging) return; if(editModeEl.value==='move'){ const dx=e.clientX-state.dragStart.x, dy=e.clientY-state.dragStart.y; state.offset.x=state.lastOffset.x+Math.round(dx*(state.photoPx.w/preview.width)); state.offset.y=state.lastOffset.y+Math.round(dy*(state.photoPx.h/preview.height)); draw() } else { const {px,py}=clientToPhotoPixels(e.clientX,e.clientY); paintMask(px,py); draw() } })
+    preview.addEventListener('pointerup', ()=> state.dragging=false)
+    preview.addEventListener('pointercancel', ()=> state.dragging=false)
 
-    // drag move or paint
-    preview.addEventListener('pointerdown', (e)=>{
-      preview.setPointerCapture(e.pointerId)
-      state.dragging = true
-      state.dragStart = {x:e.clientX, y:e.clientY}
-      state.lastOffset = {...state.offset}
-      if(editModeEl.value!=='move'){
-        const {px,py} = clientToPhotoPixels(e.clientX,e.clientY)
-        paintMask(px,py); draw()
-      }
-    })
-    preview.addEventListener('pointermove', (e)=>{
-      if(!state.dragging) return
-      if(editModeEl.value==='move'){
-        const dx = e.clientX - state.dragStart.x
-        const dy = e.clientY - state.dragStart.y
-        // convert from preview space to output pixel space
-        state.offset.x = state.lastOffset.x + Math.round(dx * (state.photoPx.w/preview.width))
-        state.offset.y = state.lastOffset.y + Math.round(dy * (state.photoPx.h/preview.height))
-        draw()
-      } else {
-        const {px,py} = clientToPhotoPixels(e.clientX,e.clientY)
-        paintMask(px,py); draw()
-      }
-    })
-    preview.addEventListener('pointerup', ()=>{ state.dragging=false })
-    preview.addEventListener('pointercancel', ()=>{ state.dragging=false })
+    function renderPhotoToCanvas(){ const out=document.createElement('canvas'); out.width=state.photoPx.w; out.height=state.photoPx.h; const g=out.getContext('2d'); g.fillStyle=state.bgColor; g.fillRect(0,0,out.width,out.height); if(state.imgBitmap){ const iw=state.imgBitmap.width*state.scale, ih=state.imgBitmap.height*state.scale; const ix=Math.round(state.offset.x + (state.photoPx.w - iw)/2), iy=Math.round(state.offset.y + (state.photoPx.h - ih)/2); g.drawImage(state.imgBitmap, ix, iy, iw, ih); g.globalCompositeOperation='destination-in'; g.drawImage(state.maskCanvas,0,0); g.globalCompositeOperation='destination-over'; g.fillStyle=state.bgColor; g.fillRect(0,0,out.width,out.height); g.globalCompositeOperation='source-over' } return out }
 
-    // make single photo PNG (exact pixels)
-    function renderPhotoToCanvas(){
-      const out = document.createElement('canvas')
-      out.width = state.photoPx.w; out.height = state.photoPx.h
-      const g = out.getContext('2d')
-      g.fillStyle = state.bgColor; g.fillRect(0,0,out.width,out.height)
-      if(state.imgBitmap){
-        const iw = state.imgBitmap.width * state.scale
-        const ih = state.imgBitmap.height * state.scale
-        const ix = Math.round(state.offset.x + (state.photoPx.w - iw)/2)
-        const iy = Math.round(state.offset.y + (state.photoPx.h - ih)/2)
-        // draw person
-        g.drawImage(state.imgBitmap, ix, iy, iw, ih)
-        // apply mask
-        g.globalCompositeOperation='destination-in'
-        g.drawImage(state.maskCanvas,0,0)
-        g.globalCompositeOperation='destination-over'
-        g.fillStyle = state.bgColor; g.fillRect(0,0,out.width,out.height)
-        g.globalCompositeOperation='source-over'
-      }
-      return out
-    }
+    downloadPNGBtn.addEventListener('click', ()=>{ const out=renderPhotoToCanvas(); const a=document.createElement('a'); a.href=out.toDataURL('image/png'); a.download=`pas-foto_${presetEl.value.replace(/[^\w]+/g,'-')}_${state.paperDPI}dpi.png`; a.click() })
 
-    downloadPNGBtn.addEventListener('click', ()=>{
-      const out = renderPhotoToCanvas()
-      const a = document.createElement('a')
-      a.href = out.toDataURL('image/png')
-      a.download = `pas-foto_${presetEl.value.replace(/[^\w]+/g,'-')}_${state.paperDPI}dpi.png`
-      a.click()
-    })
+    function paperPixels(paper,dpi){ if(paper==='4x6in') return {w:inchToPixels(6,dpi),h:inchToPixels(4,dpi)}; if(paper==='A5') return {w:mmToPixels(210,dpi),h:mmToPixels(148,dpi)}; if(paper==='A4') return {w:mmToPixels(297,dpi),h:mmToPixels(210,dpi)}; return {w:inchToPixels(6,dpi),h:inchToPixels(4,dpi)} }
 
-    function paperPixels(paper, dpi){
-      if(paper==='4x6in') return {w: inchToPixels(6,dpi), h: inchToPixels(4,dpi)}
-      if(paper==='A5') return {w: mmToPixels(210,dpi), h: mmToPixels(148,dpi)}
-      if(paper==='A4') return {w: mmToPixels(297,dpi), h: mmToPixels(210,dpi)}
-      return {w: inchToPixels(6,dpi), h: inchToPixels(4,dpi)}
-    }
-
-    function layoutSheet(){
-      const dpi = state.paperDPI
-      const paper = paperEl.value
-      const margin = mmToPixels(5, dpi) // 5mm margin
-      const gap = mmToPixels(3, dpi) // jarak antar foto
-      const paperPx = paperPixels(paper, dpi)
-      sheet.width = paperPx.w; sheet.height = paperPx.h
-      sheetCtx.fillStyle = '#ffffff'; sheetCtx.fillRect(0,0,sheet.width,sheet.height)
-
-      const photo = renderPhotoToCanvas()
-      const pw = photo.width, ph = photo.height
-
-      // hitung berapa kolom/baris yang muat
-      const cols = Math.max(1, Math.floor((paperPx.w - margin*2 + gap) / (pw + gap)))
-      const rows = Math.max(1, Math.floor((paperPx.h - margin*2 + gap) / (ph + gap)))
-
-      const startX = Math.round((paperPx.w - (cols*pw + (cols-1)*gap)) / 2)
-      const startY = Math.round((paperPx.h - (rows*ph + (rows-1)*gap)) / 2)
-
-      for(let r=0;r<rows;r++){
-        for(let c=0;c<cols;c++){
-          const x = startX + c*(pw+gap)
-          const y = startY + r*(ph+gap)
-          sheetCtx.drawImage(photo, x,y)
-          if(cutGuidesEl.checked){
-            sheetCtx.strokeStyle = 'rgba(0,0,0,.25)'
-            sheetCtx.lineWidth = 1
-            sheetCtx.strokeRect(x+0.5, y+0.5, pw-1, ph-1)
-          }
-        }
-      }
-
-      sheetWrap.hidden = false
-    }
+    function layoutSheet(){ const dpi=state.paperDPI, paper=paperEl.value, margin=mmToPixels(5,dpi), gap=mmToPixels(3,dpi), paperPx=paperPixels(paper,dpi); sheet.width=paperPx.w; sheet.height=paperPx.h; sheetCtx.fillStyle='#ffffff'; sheetCtx.fillRect(0,0,sheet.width,sheet.height); const photo=renderPhotoToCanvas(), pw=photo.width, ph=photo.height; const cols=Math.max(1,Math.floor((paperPx.w - margin*2 + gap)/(pw+gap))), rows=Math.max(1,Math.floor((paperPx.h - margin*2 + gap)/(ph+gap))); const startX=Math.round((paperPx.w - (cols*pw + (cols-1)*gap))/2); const startY=Math.round((paperPx.h - (rows*ph + (rows-1)*gap))/2); for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ const x=startX + c*(pw+gap), y=startY + r*(ph+gap); sheetCtx.drawImage(photo,x,y); if(cutGuidesEl.checked){ sheetCtx.strokeStyle='rgba(0,0,0,.25)'; sheetCtx.lineWidth=1; sheetCtx.strokeRect(x+0.5,y+0.5,pw-1,ph-1) } } } sheetWrap.hidden=false }
 
     makeSheetBtn.addEventListener('click', layoutSheet)
 
-    downloadPDFBtn.addEventListener('click', ()=>{
-      layoutSheet()
-      const { jsPDF } = window.jspdf
-      const dpi = state.paperDPI
-      const paper = paperEl.value
-      const paperPx = paperPixels(paper, dpi)
-      // ukuran PDF dalam mm
-      const mmW = paper==='4x6in' ? 152.4 : (paper==='A5'? 148 : 210)
-      const mmH = paper==='4x6in' ? 101.6 : (paper==='A5'? 210 : 297)
-      const doc = new jsPDF({orientation: (mmW>mmH?'landscape':'portrait'), unit:'mm', format:[mmW, mmH]})
-      const dataURL = sheet.toDataURL('image/png')
-      doc.addImage(dataURL, 'PNG', 0, 0, mmW, mmH)
-      doc.save(`lembar-pas-foto_${paper}_${dpi}dpi.pdf`)
-    })
+    downloadPDFBtn.addEventListener('click', ()=>{ layoutSheet(); const { jsPDF } = window.jspdf; const dpi=state.paperDPI, paper=paperEl.value; const mmW = paper==='4x6in'?152.4:(paper==='A5'?148:210); const mmH = paper==='4x6in'?101.6:(paper==='A5'?210:297); const doc=new jsPDF({orientation:(mmW>mmH?'landscape':'portrait'), unit:'mm', format:[mmW,mmH]}); const dataURL=sheet.toDataURL('image/png'); doc.addImage(dataURL,'PNG',0,0,mmW,mmH); doc.save(`lembar-pas-foto_${paper}_${dpi}dpi.pdf`) })
+
+    // ===== AI segmentation (BodyPix) =====
+    function aiConfig(){
+      const q=aiQualityEl.value
+      if(q==='fast') return {architecture:'MobileNetV1', outputStride:16, multiplier:0.50, quantBytes:2, internalResolution:'low'}
+      if(q==='high') return {architecture:'ResNet50', outputStride:32, multiplier:1.0, quantBytes:2, internalResolution:'high'}
+      return {architecture:'MobileNetV1', outputStride:16, multiplier:0.75, quantBytes:2, internalResolution:'medium'}
+    }
+
+    async function ensureNet(){ if(state.net) return state.net; progress.hidden=false; bar.style.width='10%'; state.net = await bodyPix.load(aiConfig()); bar.style.width='40%'; return state.net }
+
+    function buildSourceAtPhotoSize(){ const src=document.createElement('canvas'); src.width=state.photoPx.w; src.height=state.photoPx.h; const g=src.getContext('2d'); g.clearRect(0,0,src.width,src.height); if(state.imgBitmap){ const iw=state.imgBitmap.width*state.scale, ih=state.imgBitmap.height*state.scale; const ix=Math.round(state.offset.x + (state.photoPx.w - iw)/2), iy=Math.round(state.offset.y + (state.photoPx.h - ih)/2); g.drawImage(state.imgBitmap, ix, iy, iw, ih) } return src }
+
+    function applyFeather(maskCanvas, px){ if(px<=0) return maskCanvas; const tmp=document.createElement('canvas'); tmp.width=maskCanvas.width; tmp.height=maskCanvas.height; const tg=tmp.getContext('2d'); tg.filter=`blur(${px}px)`; tg.drawImage(maskCanvas,0,0); return tmp }
+
+    async function runAI(){ if(!state.imgBitmap) return; try{ progress.hidden=false; bar.style.width='15%'; const net=await ensureNet(); bar.style.width='55%'; const src=buildSourceAtPhotoSize(); const seg=await net.segmentPerson(src,{internalResolution:aiConfig().internalResolution, segmentationThreshold:0.7}); bar.style.width='75%';
+        const mg=state.maskCanvas.getContext('2d'); const {width,height,data}=seg; const imgData=mg.createImageData(width,height); for(let i=0;i<data.length;i++){ const on=data[i]===1; imgData.data[i*4+0]=255; imgData.data[i*4+1]=255; imgData.data[i*4+2]=255; imgData.data[i*4+3]= on?255:0 } const tmp=document.createElement('canvas'); tmp.width=width; tmp.height=height; tmp.getContext('2d').putImageData(imgData,0,0); const featherPx=parseInt(featherEl.value,10); const blurred=applyFeather(tmp, featherPx); mg.clearRect(0,0,state.maskCanvas.width,state.maskCanvas.height); mg.drawImage(blurred,0,0, state.maskCanvas.width, state.maskCanvas.height); bar.style.width='100%'; setTimeout(()=>{progress.hidden=true; bar.style.width='0%'},300); draw() } catch(err){ progress.hidden=true; bar.style.width='0%'; alert('Gagal AI segmentation: '+ err.message) } }
+
+    aiBtn.addEventListener('click', runAI)
 
     // init
-    updatePhotoSize()
-    setBG('#ffffff')
+    updatePhotoSize(); setBG('#ffffff')
   })()
   </script>
 </body>
